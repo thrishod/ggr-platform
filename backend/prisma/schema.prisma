@@ -1,0 +1,104 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Customer {
+  id             String         @id @default(uuid())
+  fullName       String
+  mobile         String         @unique
+  email          String?
+  address        String
+  community      String
+  houseNumber    String
+  route          String
+  createdAt      DateTime       @default(now())
+  subscriptions  Subscription[]
+  invoices       Invoice[]
+}
+
+model Subscription {
+  id              String                @id @default(uuid())
+  customerId      String
+  customer        Customer              @relation(fields: [customerId], references: [id])
+  productId       String
+  product         Product               @relation(fields: [productId], references: [id])
+  quantity        Float                 
+  status          SubscriptionStatus    @default(ACTIVE)
+  startDate       DateTime
+  endDate         DateTime?
+  dailyLedgers    DailyDeliveryLedger[]
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  PAUSED
+  CANCELLATION_REQUESTED
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+}
+
+model Product {
+  id            String         @id @default(uuid())
+  name          String         
+  currentPrice  Float          
+  subscriptions Subscription[]
+}
+
+model DailyDeliveryLedger {
+  id                String         @id @default(uuid())
+  date              DateTime       
+  subscriptionId    String
+  subscription      Subscription   @relation(fields: [subscriptionId], references: [id])
+  scheduledQuantity Float
+  deliveredQuantity Float          @default(0)
+  status            DeliveryStatus @default(SCHEDULED)
+  billable          Boolean        @default(true)
+  updatedAt         DateTime       @updatedAt
+}
+
+enum DeliveryStatus {
+  SCHEDULED
+  DELIVERED
+  PARTIALLY_DELIVERED
+  PAUSED
+  CANCELLED
+  MISSED
+  NOT_DELIVERED
+  ADJUSTED
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  billingPeriod String        
+  subtotal      Float
+  tax           Float         @default(0)
+  total         Float
+  paymentStatus PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+model PaymentEvent {
+  id             String   @id @default(uuid())
+  gatewayEventId String   @unique
+  eventType      String
+  payload        Json
+  createdAt      DateTime @default(now())
+}
