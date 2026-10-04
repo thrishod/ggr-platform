@@ -9,6 +9,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health Check
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date() });
+});
+
 // Pause Subscription API (Creates daily ledger entries with billable = false)
 app.post('/api/subscriptions/:id/pause', async (req: Request, res: Response) => {
   const { id } = req.params;
